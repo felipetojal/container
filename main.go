@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"syscall"
 )
 
@@ -22,6 +23,33 @@ func parent() {
 	callerUID := os.Getuid() // User ID
 	callerGID := os.Getgid() // Group ID
 
+	// Maps the OS user GID to a new GID inside the namespace
+	gidMappings := []syscall.SysProcIDMap{
+		{
+			ContainerID: 0,
+			HostID: callerGID,
+			Size: 1,
+		},
+	}
+
 	
+	// Maps the OS user UID to a new UID inside the namespace
+	uidMappings := []syscall.SysProcIDMap{
+		{
+			ContainerID: 0,
+			HostID: callerUID,
+			Size: 1,
+		},
+	}
+
+	// "/proc/self/exe" -> points to the binary executable file of the program that is currently running
+	cmd := exec.Command("/proc/self/exe", append([]string{"child"}, os.Args[2:]...)...)
+
+	// Sets the namespace attributes
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Cloneflags: uintptr(flags),
+		GidMappings: gidMappings,
+		UidMappings: uidMappings,	
+	}
 
 }
