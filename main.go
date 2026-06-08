@@ -2,16 +2,22 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"syscall"
 )
 
 func main() {
+	hostname := "binha-space"
+
+	must(ParentNamespace())
+	must(ChildNamespace(hostname))
 	fmt.Println("hi")
 }
 
-func parent() {
+func ParentNamespace() (error) {
+
 	flags := syscall.CLONE_NEWNS | // Creates a new filesystem
 		syscall.CLONE_NEWIPC | // Only process within the namespace will be able to communicate
 		syscall.CLONE_NEWNET | // Creates a new network stack for the namespace
@@ -48,8 +54,34 @@ func parent() {
 	// Sets the namespace attributes
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Cloneflags: uintptr(flags),
+		Pdeathsig: syscall.SIGTERM,
 		GidMappings: gidMappings,
 		UidMappings: uidMappings,	
 	}
 
+	// Matching the pipelines		
+	cmd.Stdin = os.Stdin
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func ChildNamespace(hostname string) (error) {
+	
+	if err := syscall.Sethostname([]byte(hostname)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func must(err error) {
+	if err != nil {
+		log.Fatal(err)
+	}
 }
