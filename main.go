@@ -89,7 +89,7 @@ func ParentNamespace() error {
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 
-	fmt.Printf("Parent PID: %v\n", os.Getgid())
+	fmt.Printf("Parent PID: %v\n", os.Getpid())
 
 	return cmd.Run()
 }
@@ -108,16 +108,6 @@ func ChildProcess() {
 		fmt.Println(hostname)
 	}
 
-	cmd := exec.Command(os.Args[2])
-	
-	// Attaching the OS pipeline to the child process
-	cmd.Stdin = os.Stdin
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
-
-	fmt.Printf("Child PID: %v\n", os.Getgid())
-	fmt.Println("Hello boyz")
-
 	// Changing the root filesystem
 	// It tells the kernel: "Whenever this specific process asks to look at /, 
 	// do not show it the real hard drive. 
@@ -126,6 +116,18 @@ func ChildProcess() {
 
 	// Forces the process to go to its new root.
 	syscall.Chdir("/")
+
+	syscall.Mount("proc", "proc", "proc", 0, "")
+
+	cmd := exec.Command(os.Args[2])
+	
+	// Attaching the OS pipeline to the child process
+	cmd.Stdin = os.Stdin
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+
+	fmt.Printf("Child PID: %v\n", os.Getpid())
+	fmt.Println("Hello boyz")
 
 	cmd.Run()
 }
