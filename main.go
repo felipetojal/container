@@ -130,4 +130,8 @@ func ChildProcess() {
 	fmt.Println("Hello boyz")
 
 	cmd.Run()
+
+	//Cleaning up the virtual filesystem
+	fmt.Println("Unmount()")
+	syscall.Unmount("proc", 0)
 }
