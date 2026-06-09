@@ -86,6 +86,8 @@ func ParentNamespace() error {
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 
+	fmt.Printf("Parent PID: %v\n", os.Getgid())
+
 	return cmd.Run()
 }
 
@@ -103,5 +105,14 @@ func ChildProcess() {
 		fmt.Println(hostname)
 	}
 
+	cmd := exec.Command(os.Args[2])
+	
+	cmd.Stdin = os.Stdin
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+
+	fmt.Printf("Child PID: %v\n", os.Getgid())
 	fmt.Println("Hello boyz")
+
+	cmd.Run()
 }
