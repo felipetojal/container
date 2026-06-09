@@ -1,5 +1,5 @@
 build:
-	go build -o bin/container main.go
+	@go build -o bin/container main.go
 
 run: build
-	./bin/container
+	@./bin/container
