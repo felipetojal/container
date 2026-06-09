@@ -8,6 +8,8 @@ import (
 	"syscall"
 )
 
+const ALPINE_ROOT = "/home/lfcor/alpine-rootfs"
+
 func main() {
 	args := os.Args
 
@@ -17,14 +19,15 @@ func main() {
 			fmt.Println("Error: " + err.Error())
 			log.Fatal(err)
 		}
+		fmt.Println("Exiting ParentNamespace()")
 	case "child":
 		ChildProcess()
+		fmt.Println("Exiting ChildProcess()")
 	default:
 		fmt.Println("Command not identified")
 		os.Exit(1)
 	}
 
-	fmt.Println("hi")
 }
 
 // ParentNamespace is responsible for creating the namespace,
@@ -107,12 +110,22 @@ func ChildProcess() {
 
 	cmd := exec.Command(os.Args[2])
 	
+	// Attaching the OS pipeline to the child process
 	cmd.Stdin = os.Stdin
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 
 	fmt.Printf("Child PID: %v\n", os.Getgid())
 	fmt.Println("Hello boyz")
+
+	// Changing the root filesystem
+	// It tells the kernel: "Whenever this specific process asks to look at /, 
+	// do not show it the real hard drive. 
+	// Redirect its eyes to /home/lfcor/alpine-rootfs instead."
+	syscall.Chroot(ALPINE_ROOT)
+
+	// Forces the process to go to its new root.
+	syscall.Chdir("/")
 
 	cmd.Run()
 }
