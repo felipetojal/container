@@ -87,8 +87,8 @@ func ChildProcess() {
 	}
 
 	// Changing the root filesystem
-	// It tells the kernel: "Whenever this specific process asks to look at /, 
-	// do not show it the real hard drive. 
+	// It tells the kernel: "Whenever this specific process asks to look at /,
+	// do not show it the real hard drive.
 	// Redirect its eyes to /home/lfcor/alpine-rootfs instead."
 	syscall.Chroot(ALPINE_ROOT)
 
@@ -98,7 +98,7 @@ func ChildProcess() {
 	syscall.Mount("proc", "proc", "proc", 0, "")
 
 	cmd := exec.Command(os.Args[2])
-	
+
 	// Attaching the OS pipeline to the child process
 	cmd.Stdin = os.Stdin
 	cmd.Stderr = os.Stderr

@@ -25,5 +25,4 @@ func main() {
 		fmt.Println("Command not identified")
 		os.Exit(1)
 	}
-
 }

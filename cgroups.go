@@ -6,7 +6,11 @@ import (
 	"strconv"
 )
 
-func setupCgroups(pid int, contName string, memMax int, pidMax int) error {
+
+// setupCgroups will initialize the container cgroups. It is
+// responsible for limiting the resources that the container
+// can use.
+func setupCgroups(pid, cpuMax, memMax, pidMax int, contName string) error {
 	err, dirName := setupCgroupDir(contName)
 	if err != nil {
 		return fmt.Errorf("Error in setupCgroups(): %w", err)
@@ -23,7 +27,11 @@ func setupCgroups(pid int, contName string, memMax int, pidMax int) error {
 	if err := setupMaxPid(pidMax, dirName); err != nil {
 		return fmt.Errorf("Error in setupCgroups(): %w", err)
 	}
-	
+
+	if err := setupMaxCpu(cpuMax, dirName); err != nil {
+		return fmt.Errorf("Error in setupCgroups(): %w", err)
+	}
+
 	return nil
 }
 
@@ -66,6 +74,17 @@ func setupMaxPid(max int, dirName string) error {
 	data := []byte(strconv.Itoa(max))
 	if err := os.WriteFile(filePath, data, 0755); err != nil {
 		return fmt.Errorf("Error writing max PID: %w", err)
+	}
+	return nil
+}
+
+// setupMaxCpu writes to the cpu.pressure virtual file. It is responsible for
+// for specifying the maximum amount of CPU alocated to the container
+func setupMaxCpu(max int, dirName string) error {
+	filePath := fmt.Sprintf("%s/cpu.pressure", dirName)
+	data := []byte(strconv.Itoa(max))
+	if err := os.WriteFile(filePath, data, 0755); err != nil {
+		return fmt.Errorf("Error writing cpu.pressure: %w", err)
 	}
 	return nil
 }
