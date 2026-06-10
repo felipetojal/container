@@ -67,8 +67,6 @@ func ParentNamespace() error {
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 
-	fmt.Printf("Parent PID: %v\n", os.Getpid())
-
 	return cmd.Run()
 }
 
@@ -90,12 +88,19 @@ func ChildProcess() {
 	// It tells the kernel: "Whenever this specific process asks to look at /,
 	// do not show it the real hard drive.
 	// Redirect its eyes to /home/lfcor/alpine-rootfs instead."
-	syscall.Chroot(ALPINE_ROOT)
+	if err := syscall.Chroot(ALPINE_ROOT); err != nil {
+		log.Println("Error changin root: %w", err)
+	}
 
 	// Forces the process to go to its new root.
-	syscall.Chdir("/")
+	if err := syscall.Chdir("/"); err != nil {
+		log.Println("Error changin directory: %w", err)
+	}
 
-	syscall.Mount("proc", "proc", "proc", 0, "")
+	
+	if err := syscall.Mount("proc", "proc", "proc", 0, ""); err != nil {
+		log.Println("Error mount(): %w", err)
+	}
 
 	cmd := exec.Command(os.Args[2])
 

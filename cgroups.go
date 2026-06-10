@@ -2,10 +2,12 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 )
 
+const CGROUP_DIR = "/sys/fs/cgroup"
 
 // setupCgroups will initialize the container cgroups. It is
 // responsible for limiting the resources that the container
@@ -15,23 +17,38 @@ func setupCgroups(pid, cpuMax, memMax, pidMax int, contName string) error {
 	if err != nil {
 		return fmt.Errorf("Error in setupCgroups(): %w", err)
 	}
+	log.Printf("Directory created")
 
 	if err := setupPidCgroup(pid, dirName); err != nil {
 		return fmt.Errorf("Error in setupCgroups(): %w", err)
 	}
+	log.Printf("PID cgroup written")
 
 	if err := setupMemoryMax(memMax, dirName); err != nil {
 		return fmt.Errorf("Error in setupCgroups(): %w", err)
 	}
+	log.Printf("Memory max written")
 
 	if err := setupMaxPid(pidMax, dirName); err != nil {
 		return fmt.Errorf("Error in setupCgroups(): %w", err)
 	}
+	log.Printf("PID max written")
 
 	if err := setupMaxCpu(cpuMax, dirName); err != nil {
 		return fmt.Errorf("Error in setupCgroups(): %w", err)
 	}
+	log.Printf("CPU max written")
 
+	return nil
+}
+
+// deleteCgroup receives the container name and deletes
+// the directory associated to it in the cgroups.
+func deleteCgroup(name string) error {
+	dirName := fmt.Sprintf("%s/%s", CGROUP_DIR, name)
+	if err := os.RemoveAll(dirName); err != nil {
+		return fmt.Errorf("Error in deleteCgroup(): %w", err)
+	}
 	return nil
 }
 
@@ -39,8 +56,8 @@ func setupCgroups(pid, cpuMax, memMax, pidMax int, contName string) error {
 // Once the dir is created, the Linux Kernel automatically populates it
 // with virtual text files.
 func setupCgroupDir(name string) (error, string) {
-	dirName := fmt.Sprintf("/sys/fs/cgroups/%s", name)
-	if err := os.Mkdir(dirName, 0755); err != nil {
+	dirName := fmt.Sprintf("%s/%s", CGROUP_DIR, name)
+	if err := os.Mkdir(dirName, 0777); err != nil {
 		return fmt.Errorf("Error creating dir: %w", err), ""
 	}
 	return nil, dirName
@@ -48,10 +65,10 @@ func setupCgroupDir(name string) (error, string) {
 
 // setupPidCgroup writes the process PID associated to the folder.
 func setupPidCgroup(pid int, dirPath string) error {
-	filePath := fmt.Sprintf("%s/cgroups.procs", dirPath)
+	filePath := fmt.Sprintf("%s/cgroup.procs", dirPath)
 	data := []byte(strconv.Itoa(pid))
-	if err := os.WriteFile(filePath, data, 0755); err != nil {
-		return fmt.Errorf("Error writing cgroups.procs: %w", err)
+	if err := os.WriteFile(filePath, data, 0777); err != nil {
+		return fmt.Errorf("Error writing cgroup.procs: %w", err)
 	}
 	return nil
 }
@@ -61,7 +78,7 @@ func setupPidCgroup(pid int, dirPath string) error {
 func setupMemoryMax(max int, dirPath string) error {
 	filePath := fmt.Sprintf("%s/memory.max", dirPath)
 	data := []byte(strconv.Itoa(max))
-	if err := os.WriteFile(filePath, data, 0755); err != nil {
+	if err := os.WriteFile(filePath, data, 0777); err != nil {
 		return fmt.Errorf("Error writing memory.max: %w", err)
 	}
 	return nil
@@ -72,19 +89,19 @@ func setupMemoryMax(max int, dirPath string) error {
 func setupMaxPid(max int, dirName string) error {
 	filePath := fmt.Sprintf("%s/pids.max", dirName)
 	data := []byte(strconv.Itoa(max))
-	if err := os.WriteFile(filePath, data, 0755); err != nil {
+	if err := os.WriteFile(filePath, data, 0777); err != nil {
 		return fmt.Errorf("Error writing max PID: %w", err)
 	}
 	return nil
 }
 
-// setupMaxCpu writes to the cpu.pressure virtual file. It is responsible for
+// setupMaxCpu writes to the cpu.max virtual file. It is responsible for
 // for specifying the maximum amount of CPU alocated to the container
 func setupMaxCpu(max int, dirName string) error {
-	filePath := fmt.Sprintf("%s/cpu.pressure", dirName)
-	data := []byte(strconv.Itoa(max))
-	if err := os.WriteFile(filePath, data, 0755); err != nil {
-		return fmt.Errorf("Error writing cpu.pressure: %w", err)
+	filePath := fmt.Sprintf("%s/cpu.max", dirName)
+	data := []byte(fmt.Sprintf("%d 100000", max))
+	if err := os.WriteFile(filePath, data, 0777); err != nil {
+		return fmt.Errorf("Error writing cpu.max: %w", err)
 	}
 	return nil
 }
